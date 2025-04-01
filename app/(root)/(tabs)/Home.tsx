@@ -1,80 +1,94 @@
-// import { Text, View, Button, TextInput, Image } from "react-native"
-// import { StatusBar } from "expo-status-bar"
-// import { StyleSheet } from "react-native"
-// import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context"
-// import * as Location from "expo-location"
-// import React, {useState, useEffect} from "react"
+import { Text, TouchableOpacity, View } from "react-native"
+import { SafeAreaView } from "react-native-safe-area-context"
+import Map from "@/components/Map"
+import { useLocationStore } from "@/store"
+import { useEffect, useRef, useState } from "react"
+import * as Location from "expo-location"
+import { MapPin } from "lucide-react-native"
+import MapView from "react-native-maps"
 
-// export default function Home() {
-//     const [location, setLocation] = useState(null);
-//     const [errorMsg, setErrorMsg] = useState(null);
-//     const [time, setTime] = useState(new Date())
-//     let locationSubscription = null;
+const Home = () => {
+    const { setUserLocation, userLatitude, userLongitude } = useLocationStore()
+    const [hasPermissions, setHasPermissions] = useState(false)
+    const mapRef = useRef<MapView>(null)
 
-//     useEffect(() => {
-//         (
-//             async () => {
-//                 let {status} = await Location.requestForegroundPermissionsAsync()
-//                 if (status !== 'granted') {
-//                     setErrorMsg("Quyền truy cập vị trí bị từ chối!");
-//                     return;
-//                 }
+    const handleRecenter = () => {
+        if(mapRef.current && userLatitude && userLongitude) {
+            mapRef.current.animateToRegion({
+                latitude: userLatitude,
+                longitude: userLongitude,
+                latitudeDelta: 0.015,
+                longitudeDelta: 0.0121
+            }, 2000)
+        }
+    }
 
-//                 try {
-//                     locationSubscription = await Location.watchPositionAsync(
-//                         {
-//                             accuracy: Location.Accuracy.High,
-//                             timeInterval: 500, 
-//                             distanceInterval: 1, 
-//                         },
-//                         (newLocation) => {
-//                             setLocation(newLocation);
-//                         }
-//                     );
-//                 } catch (e) {
-//                     setErrorMsg(e.message)
-//                 }
-//             }               
-//         )()
+    const handleDestinationPress = () => {
+        console.log("something")
+    }
 
-//         return () => {
-//             if (locationSubscription) {
-//                 locationSubscription.remove(); 
-//             }
-//         };
-//     }, [])
+    useEffect(() => {
+        let isMounted = true 
 
-//     return(
-//         <SafeAreaProvider>
-//             <SafeAreaView>
-//                 <View>
-//                     <TextInput style={style.input}
-//                         value="Bro"
-//                     />
+        const requestLocation = async () => {
+            let { status } = await Location.requestForegroundPermissionsAsync()
 
-//                     {location ? (
-//                         <Text>
-//                         📍 Kinh độ: {location.coords.longitude} {"\n"}
-//                         📍 Vĩ độ: {location.coords.latitude}
-//                         </Text>
-//                     ) : (
-//                         <Text>{errorMsg || "Đang lấy vị trí..."}</Text>
-//                     )}
-//                 </View>
-//             </SafeAreaView>
-//         </SafeAreaProvider>
-//     )
-// }
+            if (status !== 'granted') {
+                setHasPermissions(false)
+                return
+            }
 
-// const style = StyleSheet.create({
-//     test: {
-//         flex: 1,
-//         backgroundColor: "grey"
-//     },
-//     input: {
-//         height: 40,
-//         margin: 5,
-//         borderWidth: 1,
-//         padding: 10
-//     }
-// })
+            let location = await Location.getCurrentPositionAsync()
+
+            if (!isMounted) return
+
+            const addressData = await Location.reverseGeocodeAsync({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude
+            })
+
+            const formattedAddress = addressData.length > 0 
+                ? `${addressData[0].name}, ${addressData[0].region}` 
+                : "Unknown Location"
+
+            setUserLocation({
+                latitude: location.coords.latitude,
+                longitude: location.coords.longitude,
+                address: formattedAddress
+            })
+        }
+
+        requestLocation()
+
+        return () => {
+            isMounted = false
+        }
+    }, [setUserLocation])
+
+    return (
+        <SafeAreaView className="flex-1 bg-gray-100">
+            <View className="flex-1">
+                <Map ref={mapRef}/> 
+
+                {/* Current location button */}
+                <View className="absolute bottom-24 right-5">
+                    <TouchableOpacity className="bg-blue-500 p-4 rounded-full shadow-lg" onPress={handleRecenter}>
+                        <MapPin color="white"/>
+                    </TouchableOpacity>
+                </View>
+
+                {/* Send my location button */}
+                <View className="absolute bottom-0 left-4 right-4">
+                    <TouchableOpacity 
+                        className="bg-blue-500 py-3 rounded-full shadow-lg items-center"
+                        // onPress={handleShareLocation}
+                    >
+                        <Text className="text-white font-semibold text-base">Send My Location</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </SafeAreaView>
+    )
+}
+
+export default Home

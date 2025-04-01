@@ -2,10 +2,13 @@ import { ScrollView, Text, View, Image, TouchableOpacity } from "react-native"
 import  React from "react"
 import { SafeAreaView } from "react-native-safe-area-context"
 import images from "@/constants/images"
+import { Link, useRouter } from "expo-router"
 
 const SignIn = () => {
-    const handleLogin = () => {
+    const router = useRouter()
 
+    const handleLogin = () => {
+        router.push("/Home")
     }
 
      return (
