@@ -1,14 +1,24 @@
-import { ScrollView, Text, View, Image, TouchableOpacity } from "react-native"
+import { ScrollView, Text, View, Image, TouchableOpacity, Platform, Linking } from "react-native"
 import  React from "react"
 import { SafeAreaView } from "react-native-safe-area-context"
 import images from "@/constants/images"
 import { Link, useRouter } from "expo-router"
+import Constants from "expo-constants"
 
 const SignIn = () => {
-    const router = useRouter()
+    const IP_ADDRESS = "10.229.109.165"
+    const SSO_HOST = `http://${IP_ADDRESS}:8000`;
+    const CALLBACK_URI = "myapp://callback"
+    const LOGIN_ROUTE = `http://localhost:8000/receive`
 
     const handleLogin = () => {
-        router.push("/Home")
+        const loginUrl = `${SSO_HOST}/receive?redirect=${encodeURIComponent(CALLBACK_URI)}`;
+        
+        console.log("Attempting to open SSO login URL:", loginUrl);
+        Linking.openURL(loginUrl).catch(err => {
+            console.error("Failed to open URL:", err);
+            alert("Could not open the login page. Please check the server address and network connection.");
+        });
     }
 
      return (
