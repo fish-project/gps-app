@@ -1,24 +1,39 @@
-import { ScrollView, Text, View, Image, TouchableOpacity, Platform, Linking } from "react-native"
+import { ScrollView, Text, View, Image, TouchableOpacity } from "react-native"
 import  React from "react"
 import { SafeAreaView } from "react-native-safe-area-context"
 import images from "@/constants/images"
-import { Link, useRouter } from "expo-router"
-import Constants from "expo-constants"
+import * as WebBrowser from "expo-web-browser"
+import * as Linking from "expo-linking"
+import * as SecureStore from "expo-secure-store"
+import { router } from "expo-router"
 
 const SignIn = () => {
-    const IP_ADDRESS = "10.229.109.165"
+    const IP_ADDRESS = process.env.EXPO_PUBLIC_IP_ADDRESS
     const SSO_HOST = `http://${IP_ADDRESS}:8000`;
     const CALLBACK_URI = "myapp://callback"
-    const LOGIN_ROUTE = `http://localhost:8000/receive`
 
-    const handleLogin = () => {
-        const loginUrl = `${SSO_HOST}/receive?redirect=${encodeURIComponent(CALLBACK_URI)}`;
+    const handleLogin = async () => {
+        const loginUrl = `${SSO_HOST}/login?redirect=${encodeURIComponent(CALLBACK_URI)}`;
         
         console.log("Attempting to open SSO login URL:", loginUrl);
-        Linking.openURL(loginUrl).catch(err => {
-            console.error("Failed to open URL:", err);
-            alert("Could not open the login page. Please check the server address and network connection.");
-        });
+        try {
+            const result = await WebBrowser.openAuthSessionAsync(loginUrl, CALLBACK_URI);
+
+            if (result.type === 'success' && result.url) {
+                console.log(`Redirected URL: ${result.url}`)
+
+                const { queryParams } = Linking.parse(result.url)
+                if(queryParams?.token && typeof queryParams.token === 'string') {
+                    const receivedToken = queryParams.token;
+                    await SecureStore.setItemAsync('userToken', receivedToken)
+                    router.replace("/Home")
+                }
+            } else {
+                console.log("Auth session cancelled or failed", result)
+            }
+        } catch(e) {
+                console.log("Failed to fetch open auth session: ", e)
+        }
     }
 
      return (

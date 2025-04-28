@@ -1,8 +1,8 @@
-import { Stack, useRouter } from "expo-router"
-import "../global.css"
-import { useEffect } from "react"
-import * as Linking from "expo-linking"
-import * as SecureStore from 'expo-secure-store';
+import { Stack, useRouter } from "expo-router";
+import "../global.css";
+import { useEffect } from "react";
+import * as Linking from "expo-linking";
+import * as SecureStore from "expo-secure-store";
 
 export default function RootLayout() {
     const router = useRouter();
@@ -12,14 +12,13 @@ export default function RootLayout() {
             console.log("Deep link received:", url);
             const { queryParams } = Linking.parse(url);
 
-            if (queryParams?.token && typeof queryParams.token == 'string') {
+            if (queryParams?.token && typeof queryParams.token === "string") {
                 const receivedToken = queryParams.token;
+
                 console.log("Token received:", receivedToken);
-
                 try {
-                    await SecureStore.setItemAsync('userToken', receivedToken);
+                    await SecureStore.setItemAsync("userToken", receivedToken);
                     console.log("Token stored securely!");
-
                     router.replace("/Home");
                 } catch (error) {
                     console.error("Failed to store token securely:", error);
@@ -33,12 +32,14 @@ export default function RootLayout() {
         const subscription = Linking.addEventListener("url", handleDeepLink);
 
         // Check for initial URL (if app opened via deep link)
-        Linking.getInitialURL().then(url => {
-            if (url) {
-                console.log("Initial URL detected:", url);
-                handleDeepLink({ url });
-            }
-        }).catch(err => console.error('Failed to get initial URL', err));
+        Linking.getInitialURL()
+            .then((url) => {
+                if (url) {
+                    console.log("Initial URL detected:", url);
+                    handleDeepLink({ url });
+                }
+            })
+            .catch((err) => console.error("Failed to get initial URL", err));
 
         return () => {
             console.log("Removing deep link listener");
@@ -49,11 +50,10 @@ export default function RootLayout() {
     useEffect(() => {
         const checkExistingToken = async () => {
             try {
-                const storedToken = await SecureStore.getItemAsync('userToken');
+                const storedToken = await SecureStore.getItemAsync("userToken");
                 if (storedToken) {
                     console.log("Found existing token on app load.");
-                    
-                    router.replace('/Home');
+                    router.replace("/Home");
                 } else {
                     console.log("No existing token found on app load.");
                 }
@@ -62,7 +62,7 @@ export default function RootLayout() {
             }
         };
         checkExistingToken();
-    }, [router]); 
+    }, [router]);
 
     return <Stack screenOptions={{ headerShown: false }} />;
 }

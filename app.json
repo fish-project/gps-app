@@ -16,7 +16,20 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "myapp",
+              "host": "callback"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -37,6 +50,9 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "ssoHost": "http://192.168.123.165:8000"
     }
   }
 }
