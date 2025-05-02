@@ -1,28 +1,47 @@
 import { Stack, useRouter } from "expo-router";
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import * as Linking from "expo-linking";
 import * as SecureStore from "expo-secure-store";
+import Toast from "react-native-toast-message"
+import { StatusBar } from "react-native";
 
 export default function RootLayout() {
     const router = useRouter();
+    const [data, setData] = useState(null);
+
+    const verifyToken = async (token: string) => {
+        try {
+            const res = await fetch(`http://${process.env.EXPO_PUBLIC_IP_ADDRESS}:8000/api/verifyToken.php?token=${token}`);
+            const json = await res.json();
+            console.log(json)
+            setData(json);
+            return json;
+        } catch (e) {
+            console.error("Token verification failed:", e);
+            return { code: 500 };
+        }
+    };
 
     useEffect(() => {
         const handleDeepLink = async ({ url }: { url: string }) => {
-            console.log("Deep link received:", url);
             const { queryParams } = Linking.parse(url);
 
             if (queryParams?.token && typeof queryParams.token === "string") {
                 const receivedToken = queryParams.token;
+                const result = await verifyToken(receivedToken);
 
-                console.log("Token received:", receivedToken);
-                try {
-                    await SecureStore.setItemAsync("userToken", receivedToken);
-                    console.log("Token stored securely!");
-                    router.replace("/Home");
-                } catch (error) {
-                    console.error("Failed to store token securely:", error);
-                    alert("Login Failed: Could not save session.");
+                if (result.code === 200) {
+                    try {
+                        await SecureStore.setItemAsync("userToken", receivedToken);
+                        console.log("Token stored securely!");
+                        router.replace("/Home");
+                    } catch (error) {
+                        console.error("Failed to store token securely:", error);
+                        alert("Login Failed: Could not save session.");
+                    }
+                } else {
+                    alert("Invalid or expired token.");
                 }
             } else {
                 console.warn("Deep link received without a valid token:", queryParams);
@@ -31,18 +50,15 @@ export default function RootLayout() {
 
         const subscription = Linking.addEventListener("url", handleDeepLink);
 
-        // Check for initial URL (if app opened via deep link)
         Linking.getInitialURL()
             .then((url) => {
                 if (url) {
-                    console.log("Initial URL detected:", url);
                     handleDeepLink({ url });
                 }
             })
             .catch((err) => console.error("Failed to get initial URL", err));
 
         return () => {
-            console.log("Removing deep link listener");
             subscription.remove();
         };
     }, [router]);
@@ -52,10 +68,15 @@ export default function RootLayout() {
             try {
                 const storedToken = await SecureStore.getItemAsync("userToken");
                 if (storedToken) {
-                    console.log("Found existing token on app load.");
-                    router.replace("/Home");
+                    const result = await verifyToken(storedToken);
+                    if (result.code === 200) {
+                        router.replace("/Home");
+                    } else {
+                        await SecureStore.deleteItemAsync("userToken");
+                        router.replace("/sign_in");
+                    }
                 } else {
-                    console.log("No existing token found on app load.");
+                    router.replace("/sign_in");
                 }
             } catch (error) {
                 console.error("Error checking for existing token:", error);
@@ -64,5 +85,12 @@ export default function RootLayout() {
         checkExistingToken();
     }, [router]);
 
-    return <Stack screenOptions={{ headerShown: false }} />;
+    return (
+        <>
+            <StatusBar barStyle="dark-content"/>
+            <Stack screenOptions={{ headerShown: false }} />
+            <Toast/>
+        </>
+    )
+    
 }
