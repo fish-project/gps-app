@@ -15,6 +15,7 @@ const SignIn = () => {
 
     const verifyToken = async (token: string) => {
         try {
+            console.log(token)
             const res = await fetch(`http://${process.env.EXPO_PUBLIC_IP_ADDRESS}:8000/api/verifyToken.php?token=${token}`);
             const json = await res.json();
             setData(json);

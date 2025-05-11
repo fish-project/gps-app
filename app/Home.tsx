@@ -65,17 +65,6 @@ const Home = () => {
         }
     }, [setUserLocation])
 
-    // For testing purpose only
-    const clearToken = async () => {
-        try {
-            await SecureStore.deleteItemAsync('userToken')
-            router.replace("/")
-
-        } catch (e) {
-            console.log('Failed to clear token')
-        }
-    }
-
     return (
         <View className="flex-1 bg-gray-100">
             <View className="absolute top-10 right-5 z-[10]">
@@ -99,13 +88,6 @@ const Home = () => {
                 {/* Send my location button */}
                 <SafeAreaView className="absolute bottom-0 left-4 right-4">
                     <StreamButton userLatitude={userLatitude} userLongitude={userLongitude} />
-
-                    {/* This is the button for the clearing token to get back to home screen*/}
-                    {/* <TouchableOpacity className="bg-red-100 shadow-md shadow-zinc-300 rounded-full w-full py-4 mt-5" onPress={clearToken}>
-                        <View className="flex flex-row items-center justify-center ">
-                            <Text className="text-lg font-medium text-red-500">Clear Token (For Testing)</Text>
-                        </View>
-                    </TouchableOpacity> */}
                 </SafeAreaView>
             </View>
         </View>

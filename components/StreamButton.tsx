@@ -11,9 +11,40 @@ const StreamButton = ({ userLatitude, userLongitude }) => {
     const [wsUrl, setWsUrl] = useState<string | null>(null);
     const ws = useRef<WebSocket | null>(null);
     const intervalId = useRef<NodeJS.Timeout | null>(null);
+    const [shipId, setShipId] = useState(null)
+    const [email, setEmail] = useState(null)
 
-    const shipId = '67c1d1c8281547336844ae62';
-    // const email = 'khang.tran@hcmut.edu.vn'
+    useEffect(() => {
+        const getShipId = async () => {
+            try {
+                const token = await SecureStore.getItemAsync("userToken");
+                const res = await fetch(`http://${process.env.EXPO_PUBLIC_IP_ADDRESS}:8080/ship`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!res.ok) {
+                    const errorBody = await res.text();
+                    console.error("Server returned error:", res.status, errorBody);
+                    setError(`Server error: ${res.status}`);
+                    return;
+                }
+
+                const json = await res.json();
+                const data = json.message[0].id;
+                setShipId(data);
+                setEmail(json.message[0].shipOwner)
+            } catch (error) {
+                console.error("Fail to fetch ship id", error);
+                setError("Failed to fetch ship id");
+            }
+        };
+
+        getShipId();
+    }, []);
+
 
     useEffect(() => {
         const prepareWebSocketUrl = async () => {
@@ -21,8 +52,6 @@ const StreamButton = ({ userLatitude, userLongitude }) => {
             if (!token) return;
 
             try {
-                const payload = JSON.parse(atob(token.split(".")[1])); // Decode JWT payload
-                const email = payload.sub;
                 const url = `ws://${process.env.EXPO_PUBLIC_IP_ADDRESS}:8010/stream/${shipId}/${email}`;
                 setWsUrl(url);
             } catch (e) {
@@ -30,8 +59,8 @@ const StreamButton = ({ userLatitude, userLongitude }) => {
                 setError("Invalid stored token");
             }
         };
-        prepareWebSocketUrl();
-    }, []);
+        if (shipId) prepareWebSocketUrl();
+    }, [shipId]);
 
     const handleStreamToggle = () => {
         if (!wsUrl) return;
